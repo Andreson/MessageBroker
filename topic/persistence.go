@@ -13,6 +13,7 @@ const (
 	PATH_PERSIST_TOPICS = "/hermes/topic/data/"
 )
 
+//escreve mensagem no disco para ser persistida e recuperada em caso falha no servidor
 func WriteMessage(topic Topic) error {
 	//var file []byte
 	topicPath := PATH_PERSIST_TOPICS + topic.Name + "/"

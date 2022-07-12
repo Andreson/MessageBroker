@@ -2,9 +2,9 @@ package topic
 
 import (
 	log "HermesMQ/logging"
+	"HermesMQ/server"
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"net"
 	"strings"
@@ -45,28 +45,33 @@ func (t Topic) BuildMessage() TopicData {
 }
 
 //trata os dados recebidos dos clientes
-func HandleConnection(t Topic) {
-	log.Infof("Hanndler :  %s\n", t.Meta.Conn.RemoteAddr().String())
+func HandleConnection(conn server.ActiveConnection) {
+	var t Topic = Topic{Meta: TopicMeta{Conn: conn.Conn}}
+
+	log.Infof("Hanndler Connection Topic:  %s\n", t.Meta.Conn.RemoteAddr().String())
 	for {
-		netData, _, err := bufio.NewReader(t.Meta.Conn).ReadLine()
+		netData, _, err := bufio.NewReader(conn.Conn).ReadLine()
+		log.Infof("new Reader")
 		if err != nil {
-			fmt.Println(err)
+			log.Errorf(err.Error())
 			return
 		}
 
 		tempDataMessage := strings.TrimSpace(string(netData))
-
+		log.Infof("tempDataMessage %s", tempDataMessage)
 		if tempDataMessage == "STOP" {
 			break
 		} else {
+
 			err := json.Unmarshal([]byte(tempDataMessage), &t)
 			if err != nil {
-				log.Infof("Erro unmarshal", err.Error())
+				log.Errorf("Erro unmarshal", err.Error())
 			}
 			err = WriteMessage(t)
 			if err != nil {
 				log.Errorf("Erro ao gravar a mensagem do topico[%s] [%s]\n", t.Name, err.Error())
 			}
+			//chamar subscribe
 			log.Infof("Mensagem recebida: %s ", tempDataMessage)
 		}
 
