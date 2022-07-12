@@ -3,22 +3,26 @@ package sub
 import (
 	log "HermesMQ/logging"
 	"HermesMQ/server"
-	"HermesMQ/topic"
+
 	"encoding/json"
 )
 
 func HandleConnection(conn server.ActiveConnection) {
 
+	log.Infof("Novo cliente connectado [ %s ] ", conn.Conn.RemoteAddr())
 	listening.Add(conn)
 
 }
 
-func SendMessage(topic topic.Topic) {
+func SendMessage(subscribe Subscribe) {
 	var topicNotFound bool = true
-	for _, subscribe := range listening.Listening {
-		if subscribe.Name == topic.Name {
+	log.Infof("Tentando entregar mensagem para topico [ %s ] ", subscribe.Name)
+	log.Infof("Clientes connectados  [ %d ] ", len(listening.Listening))
+	for _, item := range listening.Listening {
+		if item.Name == subscribe.Name {
 			topicNotFound = false
-			deliveryMenssage(subscribe, topic.BuildMessage())
+			log.Infof("Topico %s encontrado para entrega de mensagem ", subscribe.Name)
+			deliveryMenssage(item, subscribe)
 			//break para permitir pattern pubsub, remover break
 		}
 	}
@@ -27,12 +31,12 @@ func SendMessage(topic topic.Topic) {
 	}
 }
 
-func deliveryMenssage(subscribe server.ActiveConnection, data topic.TopicData) {
+func deliveryMenssage(subConn server.ActiveConnection, data Subscribe) {
 	messageJsonData, err := json.Marshal(data)
 
 	if err != nil {
 		log.Errorf("Ocorreu um erro ao serializar mensagem antes do envio ", err.Error())
 	}
-	subscribe.Conn.Write([]byte(messageJsonData))
-	log.Debug("Mensage menviada com sucesso")
+	subConn.Conn.Write(messageJsonData)
+	log.Infof("Mensage menviada com sucesso")
 }

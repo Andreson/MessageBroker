@@ -3,6 +3,7 @@ package topic
 import (
 	log "HermesMQ/logging"
 	"HermesMQ/server"
+	sub "HermesMQ/subscribe"
 	"bufio"
 	"encoding/json"
 	"math/rand"
@@ -51,14 +52,14 @@ func HandleConnection(conn server.ActiveConnection) {
 	log.Infof("Hanndler Connection Topic:  %s\n", t.Meta.Conn.RemoteAddr().String())
 	for {
 		netData, _, err := bufio.NewReader(conn.Conn).ReadLine()
-		log.Infof("new Reader")
+
 		if err != nil {
 			log.Errorf(err.Error())
 			return
 		}
 
 		tempDataMessage := strings.TrimSpace(string(netData))
-		log.Infof("tempDataMessage %s", tempDataMessage)
+
 		if tempDataMessage == "STOP" {
 			break
 		} else {
@@ -72,7 +73,14 @@ func HandleConnection(conn server.ActiveConnection) {
 				log.Errorf("Erro ao gravar a mensagem do topico[%s] [%s]\n", t.Name, err.Error())
 			}
 			//chamar subscribe
-			log.Infof("Mensagem recebida: %s ", tempDataMessage)
+			dataJson, err := json.Marshal(t.BuildMessage())
+
+			if err != nil {
+				log.Errorf("Erro ao gravar a mensagem do topico[%s] [%s]\n", t.Name, err.Error())
+			}
+			subcribe := sub.Subscribe{Name: t.Name, Data: string(dataJson)}
+			sub.SendMessage(subcribe)
+
 		}
 
 		t.Meta.Conn.Write([]byte("Conexao remota aberta em :" + t.Meta.Conn.RemoteAddr().String() + "\n"))
